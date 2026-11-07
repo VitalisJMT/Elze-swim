@@ -27,4 +27,4 @@ $('parse').onclick=()=>{let n=0;for(const line of $('paste').value.split(/\n/)){
 $('export').onclick=()=>{const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='elze-swim-atsargine-kopija.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 $('restore').onchange=async e=>{try{const obj=JSON.parse(await e.target.files[0].text());if(!Array.isArray(obj.results)||!Array.isArray(obj.competitors)||!Array.isArray(obj.cResults))throw Error('Netinkamas failas');if(!confirm('Pakeisti dabartinius duomenis atsargine kopija?'))return;db=obj;save();render();$('backupMsg').textContent='Duomenys atkurti.'}catch(err){$('backupMsg').textContent='Klaida: '+err.message}};
 render();
-</script><script src="./splash-import.js" defer></script><script src="./records-plan.js" defer></script><script src="./unified-chart.js" defer></script></body></html>
+</script><script src="./splash-import.js" defer></script><script src="./records-plan.js" defer></script><script src="./unified-chart.js" defer></script><script src="./app-v3.js" defer></script></body></html>
