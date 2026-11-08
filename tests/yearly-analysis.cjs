@@ -2,8 +2,8 @@ const assert=require('node:assert/strict');
 const {compare}=require('../yearly-analysis.js');
 const row=(date,time)=>({date,time});
 let c=compare([row('2025-08-31','1:40.00'),row('2025-09-01','1:35.00'),row('2026-08-31','1:30.00'),row('2026-09-01','1:20.00')],2025,'2026-11-08');
-assert.equal(c.delta,10);assert.equal(c.percent,10);assert.equal(c.count,2);
-c=compare([row('2024-01-01','90.00'),row('2025-09-01','95.00')],2025,'2026-11-08');assert.equal(c.delta,-5);
+assert.equal(c.delta,-10);assert.equal(c.percent,-10);assert.equal(c.count,2);
+c=compare([row('2024-01-01','90.00'),row('2025-09-01','95.00')],2025,'2026-11-08');assert.equal(c.delta,5);
 assert.equal(compare([row('2025-09-01','90.00')],2025,'2026-11-08').delta,null);
 assert.equal(compare([row('2024-01-01','90.00')],2025,'2026-11-08').current,null);
 c=compare([row('2026-01-01','90.00'),row('2026-09-01','90,00'),row('2026-12-31','80.00'),row('2026-11-31','70.00'),row('2026-10-01','DSQ')],2026,'2026-11-08');assert.equal(c.delta,0);assert.equal(c.count,1);
@@ -26,3 +26,5 @@ nodes['yearly-year'].onchange({target:{value:'2025'}});assert.equal((box.innerHT
 nodes['yearly-pool'].onchange({target:{value:'50'}});assert.ok(!box.innerHTML.includes('<td>25 m</td>'));
 nodes['yearly-athlete'].onchange({target:{value:'main'}});assert.ok(!box.innerHTML.includes('<td>Viltė Ruzgailaitė</td>'));
 console.log('Real imported history: all seasons, all swimmers, season/athlete/pool controls passed');
+
+nodes['yearly-athlete'].onchange({target:{value:'main'}});nodes['yearly-event'].onchange({target:{value:'100 krutine'}});nodes['yearly-pool'].onchange({target:{value:'25'}});assert.ok(box.innerHTML.includes('−17,87 s'));assert.ok(box.innerHTML.includes('−15,15 %'));assert.ok(box.innerHTML.includes('Pagerino PB'));

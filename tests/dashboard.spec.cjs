@@ -11,7 +11,7 @@ test('season progress for all years, athletes and pools',async({page})=>{
  await page.locator('#yearly-event').selectOption('100 krutine');
  await page.locator('#yearly-pool').selectOption('25');
  await expect(panel.locator('tbody th')).toHaveText('Sezonas 2025–2026 · 2025-09-01 – 2026-08-31');
- await expect(panel.getByRole('row').filter({hasText:'Elzė Oržekauskaitė'})).toContainText('+17,87 s');
+ await expect(panel.getByRole('row').filter({hasText:'Elzė Oržekauskaitė'})).toContainText('−17,87 s');
  await page.locator('#yearly-athlete').selectOption('main');
  await expect(panel.locator('tbody tr')).toHaveCount(2);
  await page.locator('#yearly-pool').selectOption('50');
