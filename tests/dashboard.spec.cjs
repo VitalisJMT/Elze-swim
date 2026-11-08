@@ -1,1 +1,27 @@
 const {test,expect}=require('@playwright/test');test('desktop dashboard, filters, tab views and data persistence',async({page})=>{const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:8765/Elze-swim/');await expect(page.locator('.swim-card')).toHaveCount(1);await expect(page.locator('.swim-chart-layout')).toBeVisible();await page.screenshot({path:'screenshots/desktop.png',fullPage:false});await expect(page.getByRole('heading',{name:'Rezultatai (708)',exact:true})).toBeVisible();const start=await page.locator('[data-chart-point]').evaluateAll(es=>es.map(e=>e.getAttribute('data-chart-point')).find(t=>t.startsWith('LT rekordo planas')));expect(start).toContain(new Date().toISOString().slice(0,10));await page.reload();await expect(page.getByRole('heading',{name:'Rezultatai (708)',exact:true})).toBeVisible();const select=page.locator('#swim-event-filter');await select.selectOption('all');expect(await page.locator('.swim-card').count()).toBeGreaterThan(5);await page.locator('[data-view="analysis"]').first().click();await expect(page.locator('.swim-card').first().locator('.swim-below')).toBeVisible();await expect(page.locator('.swim-card').first().locator('.swim-chart-layout')).toBeHidden();expect(errors).toEqual([])});test('mobile no horizontal overflow and screenshot',async({page})=>{await page.setViewportSize({width:390,height:844});await page.goto('http://127.0.0.1:8765/Elze-swim/');await expect(page.locator('.swim-card')).toHaveCount(1);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+2);expect(overflow).toBe(false);await page.screenshot({path:'screenshots/mobile.png',fullPage:false})});test('PWA manifest and service worker registration',async({page,request})=>{await page.goto('http://127.0.0.1:8765/Elze-swim/');const manifest=await request.get('http://127.0.0.1:8765/Elze-swim/manifest.webmanifest');expect(manifest.ok()).toBeTruthy();const json=await manifest.json();expect(json.display).toBe('standalone');expect(json.start_url).toBe('/Elze-swim/');await expect.poll(()=>page.evaluate(()=>navigator.serviceWorker.getRegistration().then(Boolean))).toBe(true);await page.reload();await expect(page.locator('.swim-card')).toHaveCount(1)});
+test('season progress for all years, athletes and pools',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8765/Elze-swim/');
+ const panel=page.locator('#yearly-analysis');
+ await expect(panel.getByRole('heading')).toHaveText('Plaukikių progresas per sezoną');
+ await expect(page.locator('#yearly-year')).toHaveValue('all');
+ expect(await panel.locator('tbody th').count()).toBeGreaterThan(3);
+ await page.getByRole('button',{name:'▥ Analizė',exact:true}).click();
+ await page.locator('#yearly-year').selectOption('2025');
+ await page.locator('#yearly-event').selectOption('100 krutine');
+ await page.locator('#yearly-pool').selectOption('25');
+ await expect(panel.locator('tbody th')).toHaveText('Sezonas 2025–2026 · 2025-09-01 – 2026-08-31');
+ await expect(panel.getByRole('row').filter({hasText:'Elzė Oržekauskaitė'})).toContainText('+17,87 s');
+ await page.locator('#yearly-athlete').selectOption('main');
+ await expect(panel.locator('tbody tr')).toHaveCount(2);
+ await page.locator('#yearly-pool').selectOption('50');
+ await expect(panel.locator('tbody')).toContainText('Nėra ankstesnio laiko');
+ await expect(panel.locator('tbody')).not.toContainText('25 m');
+ await page.locator('#yearly-athlete').selectOption('all');
+ await page.locator('#yearly-pool').selectOption('25');
+ await page.getByRole('button',{name:'▥ Analizė',exact:true}).click();
+ await page.screenshot({path:'screenshots/season-analysis.png',fullPage:false});
+ await page.setViewportSize({width:390,height:844});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)).toBe(false);
+ expect(errors).toEqual([]);
+});
