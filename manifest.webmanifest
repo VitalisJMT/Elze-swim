@@ -1,0 +1,26 @@
+{
+  "id": "/Elze-swim/",
+  "name": "Elzė SWIM – plaukimo analizė",
+  "short_name": "Elzė SWIM",
+  "description": "Plaukimo rezultatų, rekordų ir progreso analizė",
+  "lang": "lt",
+  "start_url": "/Elze-swim/",
+  "scope": "/Elze-swim/",
+  "display": "standalone",
+  "background_color": "#06111f",
+  "theme_color": "#06111f",
+  "icons": [
+    {
+      "src": "./icons/swim-192.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/swim-512.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
