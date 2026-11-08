@@ -1,0 +1,28 @@
+const assert=require('node:assert/strict');
+const {compare}=require('../yearly-analysis.js');
+const row=(date,time)=>({date,time});
+let c=compare([row('2025-08-31','1:40.00'),row('2025-09-01','1:35.00'),row('2026-08-31','1:30.00'),row('2026-09-01','1:20.00')],2025,'2026-11-08');
+assert.equal(c.delta,10);assert.equal(c.percent,10);assert.equal(c.count,2);
+c=compare([row('2024-01-01','90.00'),row('2025-09-01','95.00')],2025,'2026-11-08');assert.equal(c.delta,-5);
+assert.equal(compare([row('2025-09-01','90.00')],2025,'2026-11-08').delta,null);
+assert.equal(compare([row('2024-01-01','90.00')],2025,'2026-11-08').current,null);
+c=compare([row('2026-01-01','90.00'),row('2026-09-01','90,00'),row('2026-12-31','80.00'),row('2026-11-31','70.00'),row('2026-10-01','DSQ')],2026,'2026-11-08');assert.equal(c.delta,0);assert.equal(c.count,1);
+assert.equal(compare([row('2026-13-01','30.00')],2026,'2026-11-08').count,0);
+console.log('Season boundaries September 1 / August 31, percentages, missing baseline, slower times, ties, future dates and invalid results: passed');
+// Exercise the UI against the real snapshot with a minimal DOM adapter.
+const vm=require('node:vm'),fs=require('node:fs');
+const nodes={};const document={getElementById(id){return nodes[id]||(nodes[id]={before(){}})},createElement(){return {innerHTML:'',className:'',id:''}}};
+const context={document,console,Intl,Date};context.window=context;vm.createContext(context);
+vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../swimrankings-history.js'),'utf8'),context);
+vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../history-import.js'),'utf8'),context);
+vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../yearly-analysis.js'),'utf8'),context);
+const db=context.mergeSwimrankingsHistory({},context.SWIMRANKINGS_HISTORY).db;
+const box={before(){},innerHTML:''};nodes['yearly-analysis']=box;
+context.renderYearlyAnalysis(db);
+assert.ok(box.innerHTML.includes('Visi sezonai'));assert.ok(box.innerHTML.includes('2025-09-01 – 2026-08-31'));
+assert.ok(!box.innerHTML.includes('all-09'));for(const c of db.competitors)assert.ok(box.innerHTML.includes(c.name));
+assert.ok((box.innerHTML.match(/<th colspan="9">Sezonas/g)||[]).length>=3);
+nodes['yearly-year'].onchange({target:{value:'2025'}});assert.equal((box.innerHTML.match(/<th colspan="9">Sezonas/g)||[]).length,1);
+nodes['yearly-pool'].onchange({target:{value:'50'}});assert.ok(!box.innerHTML.includes('<td>25 m</td>'));
+nodes['yearly-athlete'].onchange({target:{value:'main'}});assert.ok(!box.innerHTML.includes('<td>Viltė Ruzgailaitė</td>'));
+console.log('Real imported history: all seasons, all swimmers, season/athlete/pool controls passed');
