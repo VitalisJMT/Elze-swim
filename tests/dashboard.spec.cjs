@@ -25,3 +25,19 @@ test('season progress for all years, athletes and pools',async({page})=>{
  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)).toBe(false);
  expect(errors).toEqual([]);
 });
+
+test('LT record coverage in charts, source matrix and pool-specific filters',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8765/Elze-swim/');
+ await expect(page.locator('#lt-records-panel')).toContainText('iki 13 m.');
+ await page.locator('#swim-pool-filter').selectOption('50');
+ await expect(page.locator('.chart-wrap svg')).toContainText('LT iki 17 m.');
+ await expect(page.locator('.chart-wrap svg')).toContainText('1:04.35');
+ await expect(page.locator('#lt-records-panel tbody tr')).toHaveCount(1);
+ await page.getByRole('button',{name:'♕ Rekordai',exact:true}).click();
+ await expect(page.locator('#lt-records-panel tbody tr')).toHaveCount(35);
+ await expect(page.locator('#lt-records-panel a')).toHaveCount(140);
+ await page.setViewportSize({width:390,height:844});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)).toBe(false);
+ expect(errors).toEqual([]);
+});
