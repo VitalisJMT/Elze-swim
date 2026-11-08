@@ -2,3 +2,6 @@
 @media(min-width:1250px){.swim-below{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr)}}.model-box{border-color:#1b946a}.model-box .plan-title{color:#45dfab}.swim-card.view-analysis .swim-below{display:grid}.swim-card.view-table .results-details{display:block}.swim-card.view-table .results-details[open] .scroll{display:block}
 
 #manage-panel .manage-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 0;border-bottom:1px solid #27445c}#manage-panel .manage-row span{flex:1 1 230px;font-size:13px;color:#d8eafa}#manage-panel .manage-row button{border:1px solid #39709b;border-radius:8px;background:#153650;color:#f0f8ff;padding:9px 12px;font-weight:700}#manage-panel .manage-row button:hover{background:#1e547b}#manage-panel h3{margin:20px 0 8px;color:#7dc7ef}
+
+/* Keep analysis tables scrollable inside narrow screens. */
+.swim-below > *{min-width:0}#yearly-analysis{padding:22px;margin:20px 0;min-width:0}#yearly-analysis .swim-toolbar{flex-wrap:wrap}#yearly-analysis .scroll{min-width:0}#yearly-analysis td{white-space:nowrap}@media(max-width:650px){.swim-below{grid-template-columns:minmax(0,1fr)}#yearly-analysis{padding:12px}}
