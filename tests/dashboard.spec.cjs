@@ -5,7 +5,7 @@ test('season progress for all years, athletes and pools',async({page})=>{
  const panel=page.locator('#yearly-analysis');
  await expect(panel.getByRole('heading')).toHaveText('Plaukikių progresas per sezoną');
  await expect(page.locator('#yearly-year')).toHaveValue('all');
- expect(await panel.locator('tbody th').count()).toBeGreaterThan(3);
+ await expect.poll(()=>panel.locator('tbody th').count()).toBeGreaterThan(3);
  await page.getByRole('button',{name:'▥ Analizė',exact:true}).click();
  await page.locator('#yearly-year').selectOption('2025');
  await page.locator('#yearly-event').selectOption('100 krutine');
