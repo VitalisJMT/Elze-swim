@@ -41,3 +41,31 @@ test('LT record coverage in charts, source matrix and pool-specific filters',asy
  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)).toBe(false);
  expect(errors).toEqual([]);
 });
+test('PB savings starts at 120 EUR and credits new PBs once across reload and duplicate imports',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8765/Elze-swim/');
+ await expect(page.locator('#pb-savings-count')).toHaveText('6');
+ await expect(page.locator('#pb-savings-balance')).toContainText('120,00');
+ await page.getByRole('button',{name:'€ PB taupyklė',exact:true}).click();
+ await expect(page.locator('#pb-savings-panel')).toContainText('Elzės PB taupyklė');
+ await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('6');
+ // Emulate the same verified history update used by future authorized result refreshes.
+ await page.evaluate(()=>{const k='elze-swim-v2',d=JSON.parse(localStorage.getItem(k));d.results.push({id:'pb-test',date:'2026-11-08',event:'50 laisvu',pool:25,time:'34.11',source:'Swimrankings'});localStorage.setItem(k,JSON.stringify(d))});
+ await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('7');await expect(page.locator('#pb-savings-balance')).toContainText('140,00');
+ await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('7');
+ await page.evaluate(()=>{const k='elze-swim-v2',d=JSON.parse(localStorage.getItem(k));d.results.push({id:'pb-test-duplicate',date:'2026-11-08',event:'50 laisvu',pool:25,time:'34.11',source:'Swimrankings'});localStorage.setItem(k,JSON.stringify(d))});
+ await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('7');
+ await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)).toBe(false);
+ expect(errors).toEqual([]);
+});
+test('Championship bonus is awarded once and does not increase the PB count',async({page})=>{
+ await page.goto('http://127.0.0.1:8765/Elze-swim/');
+ await expect(page.locator('#pb-savings-balance')).toContainText('120,00');
+ await expect(page.locator('#pb-championship-status')).toContainText('dar nepatvirtintas');
+ page.once('dialog',d=>d.accept());
+ await page.locator('#pb-confirm-championship').click();
+ await expect(page.locator('#pb-savings-balance')).toContainText('320,00');
+ await expect(page.locator('#pb-savings-count')).toHaveText('6');
+ await expect(page.locator('#pb-confirm-championship')).toHaveCount(0);
+ await page.reload();await expect(page.locator('#pb-savings-balance')).toContainText('320,00');await expect(page.locator('#pb-savings-count')).toHaveText('6');
+});
