@@ -46,6 +46,9 @@ test('PB savings starts at 120 EUR and credits new PBs once across reload and du
  await page.goto('http://127.0.0.1:8765/Elze-swim/');
  await expect(page.locator('#pb-savings-count')).toHaveText('6');
  await expect(page.locator('#pb-savings-balance')).toContainText('120,00');
+ await page.locator('#pb-savings-panel').getByText('Bonusų istorija',{exact:true}).click();
+ const pbRow=page.locator('#pb-savings-panel tbody tr').filter({hasText:'2026-10-23'}).filter({hasText:'100 laisvu stiliumi'});
+ await expect(pbRow).toContainText('1:20,40');await expect(pbRow).toContainText('1:17,27');await expect(pbRow).toContainText('−3,13 s');await expect(pbRow).toContainText('−3,89 %');
  await page.getByRole('button',{name:'€ PB taupyklė',exact:true}).click();
  await expect(page.locator('#pb-savings-panel')).toContainText('Elzės PB taupyklė');
  await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('6');
