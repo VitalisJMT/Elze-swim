@@ -43,7 +43,7 @@ root.renderYearlyAnalysis=function(db){
    const c=compare(p.rows.filter(r=>r.event===e&&String(r.pool)===length),seasonYear,today);if(!c.before&&!c.current)continue;
    const mainPB=allTimePB(people[0].rows.filter(r=>r.event===e&&String(r.pool)===length),today);
    const gap=mainPB&&c.allTime?Math.round((mainPB.s-c.allTime.s)*100)/100:null;
-   const currentGap=gap===null?'—':gapMarkup(gap)+'<br><small>'+(p.id==='main'?'Pati Elzė':gap<0?'Elzės persvara':gap>0?'Elzės atsilikimas':'Lygūs PB')+'</small>';
+   const currentGap=p.id==='main'?'':gap===null?'—':gapMarkup(gap);
    const value=r=>r?esc(r.time)+'<br><small>'+esc(r.date)+'</small>':'—';
    const change=c.delta===null?'—':(c.delta>0?'+':'')+c.delta.toFixed(2).replace('.',',').replace('-', '−')+' s';
    const percent=c.percent===null?'—':(c.percent>0?'+':'')+c.percent.toFixed(2).replace('.',',').replace('-', '−')+' %';

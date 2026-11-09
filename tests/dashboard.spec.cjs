@@ -84,7 +84,9 @@ test('table-only absolute PB and signed per-swimmer comparison',async({page})=>{
  await expect(panel.locator('thead th')).toHaveCount(10);
  await expect(panel.getByRole('columnheader',{name:'PB',exact:true})).toHaveCount(1);
  await expect(panel.locator('svg')).toHaveCount(0);
- for(const [name,gap] of [['Lėja Būdaitė','+11,47 s'],['Elija Sniraitė','−13,56 s'],['Auksė Terskovaitė','−7,77 s'],['Šarlotė Sofija Ušpuraitė','+4,68 s'],['Elzė Oržekauskaitė','0,00 s']])await expect(panel.locator('tbody tr').filter({hasText:name}).locator('.current-pb-gap')).toContainText(gap);
+ for(const [name,gap] of [['Lėja Būdaitė','+11,47 s'],['Elija Sniraitė','−13,56 s'],['Auksė Terskovaitė','−7,77 s'],['Šarlotė Sofija Ušpuraitė','+4,68 s']])await expect(panel.locator('tbody tr').filter({hasText:name}).locator('.current-pb-gap')).toHaveText(gap);
+ await expect(panel.locator('tbody tr').filter({hasText:'Elzė Oržekauskaitė'}).locator('.current-pb-gap')).toBeEmpty();
+ await expect(panel.locator('.current-pb-gap small, .current-pb-gap br')).toHaveCount(0);
  await expect(panel.locator('tbody tr').filter({hasText:'Lėja Būdaitė'}).locator('.current-pb-gap .gap-behind')).toHaveCSS('color','rgb(255, 146, 146)');
  await expect(panel.locator('tbody tr').filter({hasText:'Elija Sniraitė'}).locator('.current-pb-gap .gap-ahead')).toHaveCSS('color','rgb(94, 230, 168)');
  await page.locator('#yearly-year').selectOption('2025');
