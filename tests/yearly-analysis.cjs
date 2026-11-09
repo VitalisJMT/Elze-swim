@@ -63,3 +63,28 @@ context.renderYearlyAnalysis(malicious);assert.ok(!box.innerHTML.includes('<img 
 const withoutMain=JSON.parse(saved);withoutMain.results=[];context.renderYearlyAnalysis(withoutMain);
 assert.ok(renderedRows().length>0);assert.ok(renderedRows().every(r=>r.includes('<td class="current-pb-gap">—</td>')));
 console.log('Single absolute PB, signed colored per-athlete differences, pools, seasons, invalid data, escaping, missing baseline and immutable rerender: passed');
+
+// Deployment regression: HTML and the offline shell must request identical,
+// versioned analysis assets, without touching the user's result storage.
+(async()=>{
+ const path=require('node:path'),html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8'),sw=fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8');
+ const handlers={},cached=new Map(),deleted=[];let installed=[];
+ const sandbox={URL,fetch:async()=>{throw new Error('Offline')},self:{location:{origin:'https://example.test'},addEventListener:(type,fn)=>{handlers[type]=fn},skipWaiting:async()=>{},clients:{claim:async()=>{}}},caches:{open:async()=>({addAll:async urls=>{installed=[...urls];for(const u of urls)cached.set(u,{url:u})}}),match:async req=>cached.get(typeof req==='string'?req:req.url),keys:async()=>['elze-swim-shell-old','unrelated-cache','elze-swim-shell-2026-11-10-pb-table-2'],delete:async key=>{deleted.push(key)}}};
+ Object.defineProperty(sandbox,'localStorage',{get(){throw new Error('Service worker must not touch result storage')}});
+ vm.runInNewContext(sw,sandbox);
+ let pending;handlers.install({waitUntil:p=>{pending=p}});await pending;
+ const refs=[...html.matchAll(/(?:src|href)="(\.\/(?:yearly-analysis\.js|dashboard-v4\.css)[^"]*)"/g)].map(m=>m[1]);
+ assert.equal(refs.length,2);
+ for(const ref of refs){assert.ok(ref.endsWith('?v=2026-11-10-pb-table-2'));assert.ok(installed.includes(ref));assert.ok(!installed.includes(ref.split('?')[0]));}
+ handlers.activate({waitUntil:p=>{pending=p}});await pending;
+ assert.deepEqual(deleted,['elze-swim-shell-old']);
+ for(const ref of refs){
+  const absolute=new URL(ref,'https://example.test/Elze-swim/').href;
+  cached.set(absolute,cached.get(ref));
+  handlers.fetch({request:{method:'GET',url:absolute,mode:'cors'},respondWith:p=>{pending=p}});
+  assert.equal((await pending).url,ref,'Versioned asset must remain available offline');
+ }
+ handlers.fetch({request:{method:'GET',url:'https://example.test/Elze-swim/',mode:'navigate'},respondWith:p=>{pending=p}});
+ assert.equal((await pending).url,'./index.html');
+ console.log('Versioned HTML / precache references, offline assets/navigation and scoped cache cleanup: passed');
+})().catch(error=>{console.error(error);process.exitCode=1});
