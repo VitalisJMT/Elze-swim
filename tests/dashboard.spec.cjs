@@ -1,4 +1,4 @@
-const {test,expect}=require('@playwright/test');test.use({serviceWorkers:'block'});test('desktop dashboard, filters, tab views and data persistence',async({page})=>{const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:8765/Elze-swim/');await expect(page.locator('.swim-card')).toHaveCount(1);await expect(page.locator('.swim-chart-layout')).toBeVisible();await page.screenshot({path:'screenshots/desktop.png',fullPage:false});await expect(page.getByRole('heading',{name:'Rezultatai (708)',exact:true})).toBeVisible();const start=await page.locator('[data-chart-point]').evaluateAll(es=>es.map(e=>e.getAttribute('data-chart-point')).find(t=>t.startsWith('LT rekordo planas')));expect(start).toContain(new Date().toISOString().slice(0,10));await page.reload();await expect(page.getByRole('heading',{name:'Rezultatai (708)',exact:true})).toBeVisible();const select=page.locator('#swim-event-filter');await select.selectOption('all');expect(await page.locator('.swim-card').count()).toBeGreaterThan(5);await page.locator('[data-view="analysis"]').first().click();await expect(page.locator('.swim-card').first().locator('.swim-below')).toBeVisible();await expect(page.locator('.swim-card').first().locator('.swim-chart-layout')).toBeHidden();expect(errors).toEqual([])});test('mobile no horizontal overflow and screenshot',async({page})=>{await page.setViewportSize({width:390,height:844});await page.goto('http://127.0.0.1:8765/Elze-swim/');await expect(page.locator('.swim-card')).toHaveCount(1);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+2);expect(overflow).toBe(false);await page.screenshot({path:'screenshots/mobile.png',fullPage:false})});test('PWA manifest and service worker registration',async({browser,request})=>{const context=await browser.newContext({serviceWorkers:'allow'});const page=await context.newPage();await page.goto('http://127.0.0.1:8765/Elze-swim/');const manifest=await request.get('http://127.0.0.1:8765/Elze-swim/manifest.webmanifest');expect(manifest.ok()).toBeTruthy();const json=await manifest.json();expect(json.display).toBe('standalone');expect(json.start_url).toBe('/Elze-swim/');await expect.poll(()=>page.evaluate(()=>navigator.serviceWorker.getRegistration().then(Boolean))).toBe(true);await page.reload();await expect(page.locator('.swim-card')).toHaveCount(1);await context.close()});
+const {test,expect}=require('@playwright/test');test.use({serviceWorkers:'block'});test('desktop dashboard, filters, tab views and data persistence',async({page})=>{const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:8765/Elze-swim/');await expect(page.locator('.swim-card')).toHaveCount(1);await expect(page.locator('.swim-chart-layout')).toBeVisible();await page.screenshot({path:'screenshots/desktop.png',fullPage:false});await expect(page.getByRole('heading',{name:'Rezultatai (723)',exact:true})).toBeVisible();const start=await page.locator('[data-chart-point]').evaluateAll(es=>es.map(e=>e.getAttribute('data-chart-point')).find(t=>t.startsWith('LT rekordo planas')));expect(start).toContain(new Date().toISOString().slice(0,10));await page.reload();await expect(page.getByRole('heading',{name:'Rezultatai (723)',exact:true})).toBeVisible();const select=page.locator('#swim-event-filter');await select.selectOption('all');expect(await page.locator('.swim-card').count()).toBeGreaterThan(5);await page.locator('[data-view="analysis"]').first().click();await expect(page.locator('.swim-card').first().locator('.swim-below')).toBeVisible();await expect(page.locator('.swim-card').first().locator('.swim-chart-layout')).toBeHidden();expect(errors).toEqual([])});test('mobile no horizontal overflow and screenshot',async({page})=>{await page.setViewportSize({width:390,height:844});await page.goto('http://127.0.0.1:8765/Elze-swim/');await expect(page.locator('.swim-card')).toHaveCount(1);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+2);expect(overflow).toBe(false);await page.screenshot({path:'screenshots/mobile.png',fullPage:false})});test('PWA manifest and service worker registration',async({browser,request})=>{const context=await browser.newContext({serviceWorkers:'allow'});const page=await context.newPage();await page.goto('http://127.0.0.1:8765/Elze-swim/');const manifest=await request.get('http://127.0.0.1:8765/Elze-swim/manifest.webmanifest');expect(manifest.ok()).toBeTruthy();const json=await manifest.json();expect(json.display).toBe('standalone');expect(json.start_url).toBe('/Elze-swim/');await expect.poll(()=>page.evaluate(()=>navigator.serviceWorker.getRegistration().then(Boolean))).toBe(true);await page.reload();await expect(page.locator('.swim-card')).toHaveCount(1);await context.close()});
 test('season progress for all years, athletes and pools',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:8765/Elze-swim/');
@@ -41,34 +41,34 @@ test('LT record coverage in charts, source matrix and pool-specific filters',asy
  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)).toBe(false);
  expect(errors).toEqual([]);
 });
-test('PB savings starts at 120 EUR and credits new PBs once across reload and duplicate imports',async({page})=>{
+test('PB savings includes 180 EUR after verified history refresh and credits new PBs once across reload and duplicate imports',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:8765/Elze-swim/');
- await expect(page.locator('#pb-savings-count')).toHaveText('6');
- await expect(page.locator('#pb-savings-balance')).toContainText('120,00');
+ await expect(page.locator('#pb-savings-count')).toHaveText('9');
+ await expect(page.locator('#pb-savings-balance')).toContainText('180,00');
  await page.locator('#pb-savings-panel').getByText('Bonusų istorija',{exact:true}).click();
  const pbRow=page.locator('#pb-savings-panel tbody tr').filter({hasText:'2026-10-23'}).filter({hasText:'100 laisvu stiliumi'});
  await expect(pbRow).toContainText('1:20,40');await expect(pbRow).toContainText('1:17,27');await expect(pbRow).toContainText('−3,13 s');await expect(pbRow).toContainText('−3,89 %');
  await page.getByRole('button',{name:'€ PB taupyklė',exact:true}).click();
  await expect(page.locator('#pb-savings-panel')).toContainText('Elzės PB taupyklė');
- await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('6');
+ await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('9');
  // Emulate the same verified history update used by future authorized result refreshes.
- await page.evaluate(()=>{const k='elze-swim-v2',d=JSON.parse(localStorage.getItem(k));d.results.push({id:'pb-test',date:'2026-11-08',event:'50 laisvu',pool:25,time:'34.11',source:'Swimrankings'});localStorage.setItem(k,JSON.stringify(d))});
- await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('7');await expect(page.locator('#pb-savings-balance')).toContainText('140,00');
- await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('7');
- await page.evaluate(()=>{const k='elze-swim-v2',d=JSON.parse(localStorage.getItem(k));d.results.push({id:'pb-test-duplicate',date:'2026-11-08',event:'50 laisvu',pool:25,time:'34.11',source:'Swimrankings'});localStorage.setItem(k,JSON.stringify(d))});
- await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('7');
+ await page.evaluate(()=>{const k='elze-swim-v2',d=JSON.parse(localStorage.getItem(k));d.results.push({id:'pb-test',date:'2026-11-08',event:'50 laisvu',pool:25,time:'33.90',source:'Swimrankings'});localStorage.setItem(k,JSON.stringify(d))});
+ await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('10');await expect(page.locator('#pb-savings-balance')).toContainText('200,00');
+ await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('10');
+ await page.evaluate(()=>{const k='elze-swim-v2',d=JSON.parse(localStorage.getItem(k));d.results.push({id:'pb-test-duplicate',date:'2026-11-08',event:'50 laisvu',pool:25,time:'33.90',source:'Swimrankings'});localStorage.setItem(k,JSON.stringify(d))});
+ await page.reload();await expect(page.locator('#pb-savings-count')).toHaveText('10');
  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)).toBe(false);
  expect(errors).toEqual([]);
 });
 test('Championship bonus is awarded once and does not increase the PB count',async({page})=>{
  await page.goto('http://127.0.0.1:8765/Elze-swim/');
- await expect(page.locator('#pb-savings-balance')).toContainText('120,00');
+ await expect(page.locator('#pb-savings-balance')).toContainText('180,00');
  await expect(page.locator('#pb-championship-status')).toContainText('dar nepatvirtintas');
  page.once('dialog',d=>d.accept());
  await page.locator('#pb-confirm-championship').click();
- await expect(page.locator('#pb-savings-balance')).toContainText('320,00');
- await expect(page.locator('#pb-savings-count')).toHaveText('6');
+ await expect(page.locator('#pb-savings-balance')).toContainText('380,00');
+ await expect(page.locator('#pb-savings-count')).toHaveText('9');
  await expect(page.locator('#pb-confirm-championship')).toHaveCount(0);
- await page.reload();await expect(page.locator('#pb-savings-balance')).toContainText('320,00');await expect(page.locator('#pb-savings-count')).toHaveText('6');
+ await page.reload();await expect(page.locator('#pb-savings-balance')).toContainText('380,00');await expect(page.locator('#pb-savings-count')).toHaveText('9');
 });

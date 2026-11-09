@@ -2,7 +2,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const api=require('../pb-savings.js');
 const w={};w.window=w;vm.createContext(w);vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../swimrankings-history.js'),'utf8'),w);
 const h=w.SWIMRANKINGS_HISTORY,a=h.athletes.find(a=>a.name==='Elzė Oržekauskaitė');
-const db={results:h.results.filter(r=>r.athleteId===a.id).map(r=>({...r,source:'Swimrankings'}))};
+const db={results:h.results.filter(r=>r.athleteId===a.id&&r.date<='2026-10-24').map(r=>({...r,source:'Swimrankings'}))};
 assert.equal(api.reconcile(db,'2026-11-09').added,0);assert.equal(api.totals(db,2026).count,6);assert.equal(api.totals(db,2026).cents,12000);
 assert.equal(db.pbSavings.seasons[2026].entries.length,6);
 const r=(date,event,time,pool=25,extra={})=>({date,event,time,pool,source:'Swimrankings',...extra});
