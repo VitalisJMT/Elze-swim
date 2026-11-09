@@ -2,21 +2,28 @@
 (function(root){
 'use strict';
 const seconds=t=>{const s=String(t??'').replace(',','.');if(!/^\d+(?::[0-5]\d)?(?:\.\d{1,2})?$/.test(s))return NaN;return s.split(':').reduce((a,v)=>a*60+Number(v),0)};
+const validDate=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&Number.isFinite(Date.parse(s))&&new Date(s).toISOString().slice(0,10)===s;
+// Missing event/pool fields are supported by the comparison helper; present fields
+// must describe an individual swim in a supported pool. Never mutate source rows.
+function validRows(rows,today){return rows.map(r=>({...r,s:seconds(r.time)})).filter(r=>validDate(r.date)&&r.date<=today&&Number.isFinite(r.s)&&r.s>0&&(!r.status||!/DSQ|DQ|DNS|DNF|DISQ/i.test(r.status))&&!r.relay&&(r.event===undefined||/^\d+ (laisvu|krutine|nugara|peteliske|kompleksinis)$/.test(r.event))&&(r.pool===undefined||[25,50].includes(Number(r.pool))))}
+const best=a=>a.slice().sort((a,b)=>a.s-b.s||a.date.localeCompare(b.date))[0]||null;
+const allTimePB=(rows,today)=>best(validRows(rows,today));
 function compare(rows,year,today){
-  const start=year+'-09-01',end=[(year+1)+'-08-31',today].sort()[0];
-  const valid=rows.map(r=>({...r,s:seconds(r.time)})).filter(r=>/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&Number.isFinite(Date.parse(r.date))&&new Date(r.date).toISOString().slice(0,10)===r.date&&r.date<=end&&Number.isFinite(r.s)&&r.s>0);
-  const best=a=>a.slice().sort((a,b)=>a.s-b.s||a.date.localeCompare(b.date))[0]||null;
-  const before=best(valid.filter(r=>r.date<start)),during=valid.filter(r=>r.date>=start),current=best(during);
-  const delta=before&&current?Math.round((current.s-before.s)*100)/100:null;
-  return {before,current,count:during.length,delta,percent:delta===null?null:delta/before.s*100};
+ const start=year+'-09-01',end=[(year+1)+'-08-31',today].sort()[0],valid=validRows(rows,end);
+ const before=best(valid.filter(r=>r.date<start)),during=valid.filter(r=>r.date>=start),current=best(during);
+ const delta=before&&current?Math.round((current.s-before.s)*100)/100:null;
+ return {before,current,allTime:allTimePB(rows,today),count:during.length,delta,percent:delta===null?null:delta/before.s*100};
 }
 root.calendarYearComparison=compare;
-if(typeof module!=='undefined')module.exports={compare};
+if(typeof module!=='undefined')module.exports={compare,allTimePB,validDate};
 if(!root.document)return;
 let year='all',athlete='all',event='all',pool='all';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const label=e=>e.replace(/laisvu|krutine|peteliske|kompleksinis/g,s=>({laisvu:'laisvu stiliumi',krutine:'krūtine',peteliske:'peteliške',kompleksinis:'kompleksiniu būdu'}[s]));
 const todayLT=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Vilnius'}).format(new Date());
+const signedGap=n=>(n<0?'−':n>0?'+':'')+Math.abs(n).toFixed(2).replace('.',',')+' s';
+const gapClass=n=>n<0?'gap-ahead':n>0?'gap-behind':'gap-equal';
+const gapMarkup=n=>'<span class="'+gapClass(n)+'">'+signedGap(n)+'</span>';
 root.renderYearlyAnalysis=function(db){
  let box=document.getElementById('yearly-analysis');if(!box){box=document.createElement('section');box.id='yearly-analysis';box.className='panel';document.getElementById('manage-panel').before(box)}
  const people=[{id:'main',name:'Elzė Oržekauskaitė',rows:db.results},...db.competitors.map(c=>({...c,rows:db.cResults.filter(r=>r.cid===c.id)}))];
@@ -34,16 +41,19 @@ root.renderYearlyAnalysis=function(db){
   const keys=[...new Set(p.rows.map(r=>r.event+'|'+r.pool))].sort();
   for(const key of keys){const [e,length]=key.split('|');if((event!=='all'&&event!==e)||(pool!=='all'&&pool!==length))continue;
    const c=compare(p.rows.filter(r=>r.event===e&&String(r.pool)===length),seasonYear,today);if(!c.before&&!c.current)continue;
+   const mainPB=allTimePB(people[0].rows.filter(r=>r.event===e&&String(r.pool)===length),today);
+   const gap=mainPB&&c.allTime?Math.round((mainPB.s-c.allTime.s)*100)/100:null;
+   const currentGap=gap===null?'—':gapMarkup(gap)+'<br><small>'+(p.id==='main'?'Pati Elzė':gap<0?'Elzės persvara':gap>0?'Elzės atsilikimas':'Lygūs PB')+'</small>';
    const value=r=>r?esc(r.time)+'<br><small>'+esc(r.date)+'</small>':'—';
    const change=c.delta===null?'—':(c.delta>0?'+':'')+c.delta.toFixed(2).replace('.',',').replace('-', '−')+' s';
    const percent=c.percent===null?'—':(c.percent>0?'+':'')+c.percent.toFixed(2).replace('.',',').replace('-', '−')+' %';
    const status=!c.current?'Nėra sezono rezultatų':!c.before?'Nėra ankstesnio laiko':c.delta<0?'Pagerino PB':c.delta===0?'Pakartojo PB':'PB nepagerino';
-   seasonRows+='<tr><td>'+esc(p.name)+'</td><td>'+esc(label(e))+'</td><td>'+esc(length)+' m</td><td>'+value(c.before)+'</td><td>'+value(c.current)+'</td><td>'+change+'</td><td>'+percent+'</td><td>'+c.count+'</td><td>'+status+'</td></tr>';
+   seasonRows+='<tr><td>'+esc(p.name)+'</td><td>'+esc(label(e))+'</td><td>'+esc(length)+' m</td><td>'+value(c.allTime)+'</td><td class="current-pb-gap">'+currentGap+'</td><td>'+value(c.current)+'</td><td>'+change+'</td><td>'+percent+'</td><td>'+c.count+'</td><td>'+status+'</td></tr>';
   }
  }
- if(seasonRows)rows+='<tr><th colspan="9">Sezonas '+seasonYear+'–'+(seasonYear+1)+' · '+seasonYear+'-09-01 – '+([(seasonYear+1)+'-08-31',today].sort()[0])+'</th></tr>'+seasonRows;
+ if(seasonRows)rows+='<tr><th colspan="10">Sezonas '+seasonYear+'–'+(seasonYear+1)+' · '+seasonYear+'-09-01 – '+([(seasonYear+1)+'-08-31',today].sort()[0])+'</th></tr>'+seasonRows;
  }
- box.innerHTML='<h2>Plaukikių progresas per sezoną</h2><div class="swim-toolbar">'+select('year','Sezonas',[['all','Visi sezonai'],...years.map(y=>[y,y+'–'+(y+1)+(y===currentSeason?' (iki šiandien)':'')])],year)+select('athlete','Plaukikė',[['all','Visos plaukikės'],...people.map(p=>[p.id,p.name])],athlete)+select('event','Rungtis',[['all','Visos rungtys'],...events.map(e=>[e,label(e)])],event)+select('pool','Baseinas',[['all','Visi baseinai'],['25','25 m'],['50','50 m']],pool)+'</div><p>Lyginamas geriausias asmeninis laikas iki rugsėjo 1 d. su geriausiu pasirinkto sezono laiku. „−“ reiškia greičiau, „+“ – lėčiau; procentas skaičiuojamas nuo ankstesnio laiko. Sezonas: rugsėjo 1 d. – kitų metų rugpjūčio 31 d. imtinai. 25 m ir 50 m baseinai analizuojami atskirai.</p><div class="scroll"><table><thead><tr><th>Plaukikė</th><th>Rungtis</th><th>Baseinas</th><th>PB iki sezono pradžios</th><th>Sezono geriausias</th><th>Pokytis, s</th><th>Pokytis, %</th><th>Startų</th><th>Įvertinimas</th></tr></thead><tbody>'+ (rows||'<tr><td colspan="9">Pasirinktam laikotarpiui ir filtrams duomenų nėra.</td></tr>')+'</tbody></table></div><p class="sub">Be ankstesnio laiko pagerėjimas neskaičiuojamas. Jei sezono geriausias laikas lėtesnis, ankstesnis PB išlieka. Skaičiavimas remiasi tik įkelta rezultatų istorija.</p>';
+ box.innerHTML='<h2>Plaukikių progresas per sezoną</h2><div class="swim-toolbar">'+select('year','Sezonas',[['all','Visi sezonai'],...years.map(y=>[y,y+'–'+(y+1)+(y===currentSeason?' (iki šiandien)':'')])],year)+select('athlete','Plaukikė',[['all','Visos plaukikės'],...people.map(p=>[p.id,p.name])],athlete)+select('event','Rungtis',[['all','Visos rungtys'],...events.map(e=>[e,label(e)])],event)+select('pool','Baseinas',[['all','Visi baseinai'],['25','25 m'],['50','50 m']],pool)+'</div><div class="scroll"><table><thead><tr><th>Plaukikė</th><th>Rungtis</th><th>Baseinas</th><th>PB</th><th>Elzės ± nuo šio PB, s</th><th>Sezono geriausias</th><th>Pokytis, s</th><th>Pokytis, %</th><th>Startų</th><th>Įvertinimas</th></tr></thead><tbody>'+ (rows||'<tr><td colspan="10">Pasirinktam laikotarpiui ir filtrams duomenų nėra.</td></tr>')+'</tbody></table></div>';
  for(const id of ['year','athlete','event','pool'])document.getElementById('yearly-'+id).onchange=e=>{if(id==='year')year=e.target.value==='all'?'all':Number(e.target.value);else if(id==='athlete')athlete=e.target.value;else if(id==='event')event=e.target.value;else pool=e.target.value;root.renderYearlyAnalysis(db)};
 };
 })(typeof window==='undefined'?globalThis:window);

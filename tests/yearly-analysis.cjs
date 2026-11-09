@@ -21,10 +21,45 @@ const box={before(){},innerHTML:''};nodes['yearly-analysis']=box;
 context.renderYearlyAnalysis(db);
 assert.ok(box.innerHTML.includes('Visi sezonai'));assert.ok(box.innerHTML.includes('2025-09-01 – 2026-08-31'));
 assert.ok(!box.innerHTML.includes('all-09'));for(const c of db.competitors)assert.ok(box.innerHTML.includes(c.name));
-assert.ok((box.innerHTML.match(/<th colspan="9">Sezonas/g)||[]).length>=3);
-nodes['yearly-year'].onchange({target:{value:'2025'}});assert.equal((box.innerHTML.match(/<th colspan="9">Sezonas/g)||[]).length,1);
+assert.ok((box.innerHTML.match(/<th colspan="10">Sezonas/g)||[]).length>=3);
+nodes['yearly-year'].onchange({target:{value:'2025'}});assert.equal((box.innerHTML.match(/<th colspan="10">Sezonas/g)||[]).length,1);
 nodes['yearly-pool'].onchange({target:{value:'50'}});assert.ok(!box.innerHTML.includes('<td>25 m</td>'));
 nodes['yearly-athlete'].onchange({target:{value:'main'}});assert.ok(!box.innerHTML.includes('<td>Viltė Ruzgailaitė</td>'));
 console.log('Real imported history: all seasons, all swimmers, season/athlete/pool controls passed');
 
 nodes['yearly-athlete'].onchange({target:{value:'main'}});nodes['yearly-event'].onchange({target:{value:'100 krutine'}});nodes['yearly-pool'].onchange({target:{value:'25'}});assert.ok(box.innerHTML.includes('−17,87 s'));assert.ok(box.innerHTML.includes('−15,15 %'));assert.ok(box.innerHTML.includes('Pagerino PB'));
+
+// Absolute PBs and the table-only per-athlete comparison.
+const {allTimePB,validDate}=require('../yearly-analysis.js');
+const swim=(date,time,extra={})=>({date,time,event:'100 krutine',pool:25,...extra});
+const today='2026-11-09';
+const history=[swim('2025-08-01','100'),swim('2025-09-01','98'),swim('2026-08-31','95'),swim('2026-09-01','90'),swim('2026-11-10','20')];
+assert.equal(allTimePB(history,today).s,90);
+const historical=compare(history,2025,today);
+assert.equal(historical.before.s,100);assert.equal(historical.current.s,95);assert.equal(historical.allTime.s,90);assert.equal(historical.delta,-5);
+const invalid=[swim('2026-11-31','1'),swim('2026-02-29','1'),swim('2026-11-10','1'),swim('2026-10-01','1',{status:'DSQ'}),swim('2026-10-01','1',{status:'DNS'}),swim('2026-10-01','1',{status:'DNF'}),swim('2026-10-01','1',{relay:true}),swim('2026-10-01','1',{event:'4x100 krutine'}),swim('2026-10-01','1',{pool:33}),swim('2026-10-01','DSQ'),swim('2026-10-01','0')];
+assert.equal(allTimePB(invalid,today),null);
+assert.equal(validDate('2024-02-29'),true);assert.equal(validDate('2026-02-29'),false);
+assert.equal(allTimePB([swim('2026-09-02','90'),swim('2026-09-01','90')],today).date,'2026-09-01');
+const saved=JSON.stringify(db);
+context.renderYearlyAnalysis(db);
+nodes['yearly-year'].onchange({target:{value:'2026'}});nodes['yearly-athlete'].onchange({target:{value:'all'}});nodes['yearly-event'].onchange({target:{value:'100 krutine'}});nodes['yearly-pool'].onchange({target:{value:'25'}});
+const renderedRows=()=>[...box.innerHTML.matchAll(/<tr><td>(.*?)<\/tr>/g)].map(m=>m[0]);
+for(const [name,gap,cls] of [['Lėja Būdaitė','+11,47 s','gap-behind'],['Elija Sniraitė','−13,56 s','gap-ahead'],['Auksė Terskovaitė','−7,77 s','gap-ahead'],['Šarlotė Sofija Ušpuraitė','+4,68 s','gap-behind'],['Elzė Oržekauskaitė','0,00 s','gap-equal']]){
+ const r=renderedRows().find(r=>r.includes(name));assert.ok(r.includes('<td class="current-pb-gap"><span class="'+cls+'">'+gap+'</span>'),name);
+}
+assert.equal((box.innerHTML.match(/<th>PB<\/th>/g)||[]).length,1);
+assert.ok(!box.innerHTML.includes('<th>PB iki sezono pradžios</th>'));
+assert.ok(!box.innerHTML.includes('<svg'));assert.ok(!box.innerHTML.includes('gap-analysis'));
+const rendered=box.innerHTML;context.renderYearlyAnalysis(db);assert.equal(box.innerHTML,rendered);
+nodes['yearly-year'].onchange({target:{value:'2025'}});
+assert.ok(renderedRows().find(r=>r.includes('Lėja Būdaitė')).includes('+11,47 s'));
+nodes['yearly-pool'].onchange({target:{value:'50'}});
+assert.ok(renderedRows().find(r=>r.includes('Lėja Būdaitė')).includes('+19,39 s'));
+assert.ok(!box.innerHTML.includes('<td>25 m</td>'));
+assert.equal(JSON.stringify(db),saved,'Rendering must not mutate user data');
+const malicious=JSON.parse(saved);malicious.competitors[0].name='<img src=x onerror=alert(1)>';
+context.renderYearlyAnalysis(malicious);assert.ok(!box.innerHTML.includes('<img src=x'));assert.ok(box.innerHTML.includes('&lt;img'));
+const withoutMain=JSON.parse(saved);withoutMain.results=[];context.renderYearlyAnalysis(withoutMain);
+assert.ok(renderedRows().length>0);assert.ok(renderedRows().every(r=>r.includes('<td class="current-pb-gap">—</td>')));
+console.log('Single absolute PB, signed colored per-athlete differences, pools, seasons, invalid data, escaping, missing baseline and immutable rerender: passed');
