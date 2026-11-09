@@ -84,7 +84,7 @@ test('table-only absolute PB and signed per-swimmer comparison',async({page})=>{
  await expect(panel.locator('thead th')).toHaveCount(10);
  await expect(panel.getByRole('columnheader',{name:'PB',exact:true})).toHaveCount(1);
  await expect(panel.locator('svg')).toHaveCount(0);
- for(const [name,gap] of [['Lėja Būdaitė','+11,47 s'],['Elija Sniraitė','−13,56 s'],['Auksė Terskovaitė','−7,77 s'],['Šarlotė Sofija Ušpuraitė','+4,68 s']])await expect(panel.locator('tbody tr').filter({hasText:name}).locator('.current-pb-gap')).toHaveText(gap);
+ for(const [name,gap] of [['Lėja Būdaitė','+11,47'],['Elija Sniraitė','−13,56'],['Auksė Terskovaitė','−7,77'],['Šarlotė Sofija Ušpuraitė','+4,68']])await expect(panel.locator('tbody tr').filter({hasText:name}).locator('.current-pb-gap')).toHaveText(gap);
  await expect(panel.locator('tbody tr').filter({hasText:'Elzė Oržekauskaitė'}).locator('.current-pb-gap')).toBeEmpty();
  await expect(panel.locator('.current-pb-gap small, .current-pb-gap br')).toHaveCount(0);
  await expect(panel.locator('tbody tr').filter({hasText:'Lėja Būdaitė'}).locator('.current-pb-gap .gap-behind')).toHaveCSS('color','rgb(255, 146, 146)');
@@ -95,9 +95,9 @@ test('table-only absolute PB and signed per-swimmer comparison',async({page})=>{
  await expect(elze.locator('td').nth(3)).toContainText('2026-11-06');
  await expect(elze.locator('td').nth(5)).toContainText('1:40.07');
  await expect(elze).toContainText('−17,87 s');
- await expect(panel.locator('tbody tr').filter({hasText:'Lėja Būdaitė'}).locator('.current-pb-gap')).toContainText('+11,47 s');
+ await expect(panel.locator('tbody tr').filter({hasText:'Lėja Būdaitė'}).locator('.current-pb-gap')).toContainText('+11,47');
  await page.locator('#yearly-pool').selectOption('50');
- await expect(panel.locator('tbody tr').filter({hasText:'Lėja Būdaitė'}).locator('.current-pb-gap')).toContainText('+19,39 s');
+ await expect(panel.locator('tbody tr').filter({hasText:'Lėja Būdaitė'}).locator('.current-pb-gap')).toContainText('+19,39');
  expect(await page.evaluate(()=>localStorage.getItem('elze-swim-v2'))).toBe(stored);
  await page.reload();await expect(page.getByRole('heading',{name:'Rezultatai (723)',exact:true})).toBeVisible();
  await expect(page.locator('#pb-savings-count')).toHaveText('9');

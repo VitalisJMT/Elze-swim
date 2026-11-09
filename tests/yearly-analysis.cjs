@@ -45,7 +45,7 @@ const saved=JSON.stringify(db);
 context.renderYearlyAnalysis(db);
 nodes['yearly-year'].onchange({target:{value:'2026'}});nodes['yearly-athlete'].onchange({target:{value:'all'}});nodes['yearly-event'].onchange({target:{value:'100 krutine'}});nodes['yearly-pool'].onchange({target:{value:'25'}});
 const renderedRows=()=>[...box.innerHTML.matchAll(/<tr><td>(.*?)<\/tr>/g)].map(m=>m[0]);
-for(const [name,gap,cls] of [['Lėja Būdaitė','+11,47 s','gap-behind'],['Elija Sniraitė','−13,56 s','gap-ahead'],['Auksė Terskovaitė','−7,77 s','gap-ahead'],['Šarlotė Sofija Ušpuraitė','+4,68 s','gap-behind']]){
+for(const [name,gap,cls] of [['Lėja Būdaitė','+11,47','gap-behind'],['Elija Sniraitė','−13,56','gap-ahead'],['Auksė Terskovaitė','−7,77','gap-ahead'],['Šarlotė Sofija Ušpuraitė','+4,68','gap-behind']]){
  const r=renderedRows().find(r=>r.includes(name));assert.ok(r.includes('<td class="current-pb-gap"><span class="'+cls+'">'+gap+'</span></td>'),name);
 }
 assert.ok(renderedRows().find(r=>r.includes('Elzė Oržekauskaitė')).includes('<td class="current-pb-gap"></td>'));
@@ -55,9 +55,9 @@ assert.ok(!box.innerHTML.includes('<th>PB iki sezono pradžios</th>'));
 assert.ok(!box.innerHTML.includes('<svg'));assert.ok(!box.innerHTML.includes('gap-analysis'));
 const rendered=box.innerHTML;context.renderYearlyAnalysis(db);assert.equal(box.innerHTML,rendered);
 nodes['yearly-year'].onchange({target:{value:'2025'}});
-assert.ok(renderedRows().find(r=>r.includes('Lėja Būdaitė')).includes('+11,47 s'));
+assert.ok(renderedRows().find(r=>r.includes('Lėja Būdaitė')).includes('+11,47'));
 nodes['yearly-pool'].onchange({target:{value:'50'}});
-assert.ok(renderedRows().find(r=>r.includes('Lėja Būdaitė')).includes('+19,39 s'));
+assert.ok(renderedRows().find(r=>r.includes('Lėja Būdaitė')).includes('+19,39'));
 assert.ok(!box.innerHTML.includes('<td>25 m</td>'));
 assert.equal(JSON.stringify(db),saved,'Rendering must not mutate user data');
 const malicious=JSON.parse(saved);malicious.competitors[0].name='<img src=x onerror=alert(1)>';
@@ -71,13 +71,13 @@ console.log('Single absolute PB, signed colored per-athlete differences, pools, 
 (async()=>{
  const path=require('node:path'),html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8'),sw=fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8');
  const handlers={},cached=new Map(),deleted=[];let installed=[];
- const sandbox={URL,fetch:async()=>{throw new Error('Offline')},self:{location:{origin:'https://example.test'},addEventListener:(type,fn)=>{handlers[type]=fn},skipWaiting:async()=>{},clients:{claim:async()=>{}}},caches:{open:async()=>({addAll:async urls=>{installed=[...urls];for(const u of urls)cached.set(u,{url:u})}}),match:async req=>cached.get(typeof req==='string'?req:req.url),keys:async()=>['elze-swim-shell-old','unrelated-cache','elze-swim-shell-2026-11-10-pb-table-3'],delete:async key=>{deleted.push(key)}}};
+ const sandbox={URL,fetch:async()=>{throw new Error('Offline')},self:{location:{origin:'https://example.test'},addEventListener:(type,fn)=>{handlers[type]=fn},skipWaiting:async()=>{},clients:{claim:async()=>{}}},caches:{open:async()=>({addAll:async urls=>{installed=[...urls];for(const u of urls)cached.set(u,{url:u})}}),match:async req=>cached.get(typeof req==='string'?req:req.url),keys:async()=>['elze-swim-shell-old','unrelated-cache','elze-swim-shell-2026-11-10-pb-table-4'],delete:async key=>{deleted.push(key)}}};
  Object.defineProperty(sandbox,'localStorage',{get(){throw new Error('Service worker must not touch result storage')}});
  vm.runInNewContext(sw,sandbox);
  let pending;handlers.install({waitUntil:p=>{pending=p}});await pending;
  const refs=[...html.matchAll(/(?:src|href)="(\.\/(?:yearly-analysis\.js|dashboard-v4\.css)[^"]*)"/g)].map(m=>m[1]);
  assert.equal(refs.length,2);
- for(const ref of refs){assert.ok(ref.endsWith('?v=2026-11-10-pb-table-'+(ref.includes('yearly-analysis.js')?'3':'2')));assert.ok(installed.includes(ref));assert.ok(!installed.includes(ref.split('?')[0]));}
+ for(const ref of refs){assert.ok(ref.endsWith('?v=2026-11-10-pb-table-'+(ref.includes('yearly-analysis.js')?'4':'2')));assert.ok(installed.includes(ref));assert.ok(!installed.includes(ref.split('?')[0]));}
  handlers.activate({waitUntil:p=>{pending=p}});await pending;
  assert.deepEqual(deleted,['elze-swim-shell-old']);
  for(const ref of refs){

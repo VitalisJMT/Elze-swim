@@ -21,7 +21,7 @@ let year='all',athlete='all',event='all',pool='all';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const label=e=>e.replace(/laisvu|krutine|peteliske|kompleksinis/g,s=>({laisvu:'laisvu stiliumi',krutine:'krūtine',peteliske:'peteliške',kompleksinis:'kompleksiniu būdu'}[s]));
 const todayLT=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Vilnius'}).format(new Date());
-const signedGap=n=>(n<0?'−':n>0?'+':'')+Math.abs(n).toFixed(2).replace('.',',')+' s';
+const signedGap=n=>(n<0?'−':n>0?'+':'')+Math.abs(n).toFixed(2).replace('.',',');
 const gapClass=n=>n<0?'gap-ahead':n>0?'gap-behind':'gap-equal';
 const gapMarkup=n=>'<span class="'+gapClass(n)+'">'+signedGap(n)+'</span>';
 root.renderYearlyAnalysis=function(db){
