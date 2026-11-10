@@ -111,3 +111,78 @@ test('table-only absolute PB and signed per-swimmer comparison',async({page})=>{
  expect(await page.evaluate(()=>localStorage.getItem('elze-swim-v2'))).toBe(stored);
  expect(errors).toEqual([]);
 });
+
+test('compact swimmer dropdown selects one, two, three, all or only Elze without changing results',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8765/Elze-swim/');
+ const stored=await page.evaluate(()=>localStorage.getItem('elze-swim-v2'));
+ const toggle=page.locator('#swim-rival-toggle'),options=page.locator('#swim-rival-options');
+ const mainPoints=()=>page.locator('[data-chart-point^="Elzė Oržekauskaitė"]').evaluateAll(es=>es.map(e=>e.getAttribute('data-chart-point')));
+ const originalMain=await mainPoints();expect(originalMain.length).toBeGreaterThan(0);
+ await expect(page.locator('#top-filters>.swim-toolbar')).toHaveCount(1);
+ await expect(toggle).toHaveAccessibleName('Sportininkės Visos sportininkės');await expect(options).toBeHidden();
+ await toggle.click();await expect(options.getByRole('checkbox')).toHaveCount(5);
+ await options.getByRole('button',{name:'Išvalyti',exact:true}).click();
+ await expect(toggle).toContainText('Tik Elzė');await expect(options).toBeVisible();await expect(page.locator('#swim-rival-clear')).toBeFocused();
+ await expect(options.locator('input:checked')).toHaveCount(0);expect(await mainPoints()).toEqual(originalMain);
+ for(const [i,name] of ['Lėja Būdaitė','Elija Sniraitė','Auksė Terskovaitė'].entries()){
+  const check=options.getByRole('checkbox',{name,exact:true});await check.check();
+  await expect(check).toBeFocused();await expect(options).toBeVisible();await expect(options.locator('input:checked')).toHaveCount(i+1);
+  await expect(toggle).toContainText(i===0?name:'Pasirinkta: '+(i+1));
+  expect(await page.locator('[data-chart-point]').evaluateAll((es,n)=>es.some(e=>e.getAttribute('data-chart-point').startsWith(n+' · ')),name)).toBe(true);
+ }
+ const chosen=await options.locator('input:checked').evaluateAll(es=>es.map(e=>e.dataset.rival));
+ await page.locator('#swim-axis').focus();await page.locator('#swim-axis').selectOption('age');await expect(options).toBeHidden();
+ await page.locator('#swim-pool-filter').selectOption('50');await page.locator('#swim-event-filter').selectOption('200 krutine');
+ await toggle.click();expect(await options.locator('input:checked').evaluateAll(es=>es.map(e=>e.dataset.rival))).toEqual(chosen);
+ await options.getByRole('button',{name:'Pasirinkti visas',exact:true}).click();
+ await expect(options.locator('input:checked')).toHaveCount(5);await expect(toggle).toContainText('Visos sportininkės');await expect(page.locator('#swim-rival-all')).toBeFocused();
+ await page.getByRole('heading',{name:'Elzė Oržekauskaitė',exact:true}).click();await expect(options).toBeHidden();
+ for(let i=0;i<3;i++){await toggle.click();await expect(options).toBeVisible();await toggle.click();await expect(options).toBeHidden()}
+ expect(await page.evaluate(()=>localStorage.getItem('elze-swim-v2'))).toBe(stored);
+ expect(errors).toEqual([]);
+});
+
+test('swimmer dropdown keyboard preserves focus through redraw and dismisses with Escape or Tab',async({page})=>{
+ await page.goto('http://127.0.0.1:8765/Elze-swim/');
+ const toggle=page.locator('#swim-rival-toggle'),options=page.locator('#swim-rival-options');
+ await toggle.focus();await toggle.press('Enter');await expect(options).toBeVisible();
+ await toggle.press('Tab');await expect(page.locator('#swim-rival-all')).toBeFocused();
+ await page.keyboard.press('Tab');await expect(page.locator('#swim-rival-clear')).toBeFocused();
+ await page.keyboard.press('Enter');await expect(page.locator('#swim-rival-clear')).toBeFocused();
+ await page.keyboard.press('Tab');const first=options.getByRole('checkbox').first();await expect(first).toBeFocused();
+ await page.keyboard.press('Space');await expect(first).toBeChecked();await expect(first).toBeFocused();await expect(options).toBeVisible();
+ await page.keyboard.press('Space');await expect(first).not.toBeChecked();await expect(first).toBeFocused();
+ await page.keyboard.press('Escape');await expect(options).toBeHidden();await expect(toggle).toBeFocused();await expect(toggle).toHaveAttribute('aria-expanded','false');
+ await toggle.press('ArrowDown');await expect(page.locator('#swim-rival-all')).toBeFocused();
+ await options.getByRole('checkbox').last().focus();await page.keyboard.press('Tab');await expect(options).toBeHidden();
+ await toggle.focus();await toggle.press('Space');await expect(options).toBeVisible();await toggle.press('Shift+Tab');await expect(options).toBeHidden();
+});
+
+test('swimmer dropdown fits mobile, tablet and desktop while open',async({page})=>{
+ await page.goto('http://127.0.0.1:8765/Elze-swim/');
+ const toggle=page.locator('#swim-rival-toggle'),options=page.locator('#swim-rival-options');
+ for(const width of [320,390,650,768,1024,1440]){
+  await page.setViewportSize({width,height:844});await toggle.scrollIntoViewIfNeeded();
+  await toggle.click();await expect(options).toBeVisible();
+  const bounds=await options.boundingBox();expect(bounds.x).toBeGreaterThanOrEqual(0);expect(bounds.x+bounds.width).toBeLessThanOrEqual(width);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)).toBe(false);
+  await options.getByRole('button',{name:'Išvalyti',exact:true}).click();await options.getByRole('checkbox').nth(2).check();
+  await expect(options).toBeVisible();await expect(options.locator('input:checked')).toHaveCount(1);
+  if(width===390||width===1440)await page.screenshot({path:'screenshots/swimmer-dropdown-'+width+'.png',fullPage:false});
+  await options.getByRole('button',{name:'Pasirinkti visas',exact:true}).click();await toggle.click();await expect(options).toBeHidden();
+ }
+});
+
+test('RUN avatar loads the original local static sprite without external images',async({page})=>{
+ const externalImages=[];page.on('request',r=>{if(r.resourceType()==='image'&&new URL(r.url()).origin!=='http://127.0.0.1:8765')externalImages.push(r.url())});
+ const imageResponse=page.waitForResponse(r=>r.url()==='http://127.0.0.1:8765/Elze-swim/icons/elze-run-avatar.png');
+ await page.goto('http://127.0.0.1:8765/Elze-swim/');expect((await imageResponse).ok()).toBe(true);
+ const avatar=page.locator('.swim-avatar'),svg=avatar.locator('svg'),sprite=svg.locator('image');
+ await expect(svg).toHaveAttribute('viewBox','948 652 315 291');await expect(svg).toHaveAttribute('preserveAspectRatio','xMidYMid meet');
+ await expect(sprite).toHaveAttribute('href','./icons/elze-run-avatar.png');await expect(sprite).toHaveAttribute('width','1263');await expect(sprite).toHaveAttribute('height','1245');
+ const dimensions=await sprite.evaluate(async el=>{const img=new Image();img.src=el.href.baseVal;await img.decode();return [img.naturalWidth,img.naturalHeight]});expect(dimensions).toEqual([1263,1245]);
+ await expect(avatar).toHaveCSS('width','76px');await expect(avatar).toHaveCSS('height','76px');await expect(svg).toBeVisible();
+ await page.setViewportSize({width:390,height:844});await expect(avatar).toHaveCSS('width','54px');await expect(avatar).toHaveCSS('height','54px');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)).toBe(false);expect(externalImages).toEqual([]);
+});
