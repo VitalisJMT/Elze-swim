@@ -71,15 +71,15 @@ console.log('Single absolute PB, signed colored per-athlete differences, pools, 
 (async()=>{
  const path=require('node:path'),html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8'),sw=fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8');
  const handlers={},cached=new Map(),deleted=[];let installed=[];
- const sandbox={URL,fetch:async()=>{throw new Error('Offline')},self:{location:{origin:'https://example.test'},addEventListener:(type,fn)=>{handlers[type]=fn},skipWaiting:async()=>{},clients:{claim:async()=>{}}},caches:{open:async()=>({addAll:async urls=>{installed=[...urls];for(const u of urls)cached.set(u,{url:u})}}),match:async req=>cached.get(typeof req==='string'?req:req.url),keys:async()=>['elze-swim-shell-old','unrelated-cache','elze-swim-shell-2026-11-10-pb-table-4','elze-swim-shell-2026-11-10-swimmer-picker-1'],delete:async key=>{deleted.push(key)}}};
+ const sandbox={URL,fetch:async()=>{throw new Error('Offline')},self:{location:{origin:'https://example.test'},addEventListener:(type,fn)=>{handlers[type]=fn},skipWaiting:async()=>{},clients:{claim:async()=>{}}},caches:{open:async()=>({addAll:async urls=>{installed=[...urls];for(const u of urls)cached.set(u,{url:u})}}),match:async req=>cached.get(typeof req==='string'?req:req.url),keys:async()=>['elze-swim-shell-old','unrelated-cache','elze-swim-shell-2026-11-10-pb-table-4','elze-swim-shell-2026-11-10-swimmer-picker-1','elze-swim-shell-2026-11-10-swimmer-picker-2'],delete:async key=>{deleted.push(key)}}};
  Object.defineProperty(sandbox,'localStorage',{get(){throw new Error('Service worker must not touch result storage')}});
  vm.runInNewContext(sw,sandbox);
  let pending;handlers.install({waitUntil:p=>{pending=p}});await pending;
  const refs=[...html.matchAll(/(?:src|href)="(\.\/(?:yearly-analysis\.js|dashboard-v4\.css|app-v3\.js)[^"]*)"/g)].map(m=>m[1]);
  assert.equal(refs.length,3);assert.ok(installed.includes('./icons/elze-run-avatar.png'));
- for(const ref of refs){assert.ok(ref.endsWith('?v=2026-11-10-'+(ref.includes('yearly-analysis.js')?'pb-table-4':'swimmer-picker-1')));assert.ok(installed.includes(ref));assert.ok(!installed.includes(ref.split('?')[0]));}
+ for(const ref of refs){assert.ok(ref.endsWith('?v=2026-11-10-'+(ref.includes('yearly-analysis.js')?'pb-table-4':ref.includes('app-v3.js')?'swimmer-picker-1':'swimmer-picker-2')));assert.ok(installed.includes(ref));assert.ok(!installed.includes(ref.split('?')[0]));}
  handlers.activate({waitUntil:p=>{pending=p}});await pending;
- assert.deepEqual(deleted,['elze-swim-shell-old','elze-swim-shell-2026-11-10-pb-table-4']);
+ assert.deepEqual(deleted,['elze-swim-shell-old','elze-swim-shell-2026-11-10-pb-table-4','elze-swim-shell-2026-11-10-swimmer-picker-1']);
  for(const ref of refs){
   const absolute=new URL(ref,'https://example.test/Elze-swim/').href;
   cached.set(absolute,cached.get(ref));

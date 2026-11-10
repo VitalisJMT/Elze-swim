@@ -166,7 +166,9 @@ test('swimmer dropdown fits mobile, tablet and desktop while open',async({page})
   await page.setViewportSize({width,height:844});await toggle.scrollIntoViewIfNeeded();
   await toggle.click();await expect(options).toBeVisible();
   const bounds=await options.boundingBox();expect(bounds.x).toBeGreaterThanOrEqual(0);expect(bounds.x+bounds.width).toBeLessThanOrEqual(width);
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)).toBe(false);
+  if(width===320)await page.screenshot({path:'screenshots/swimmer-dropdown-320.png',fullPage:false});
+  const layout=await page.evaluate(()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,overflowing:[...document.querySelectorAll('body *')].map(el=>{const r=el.getBoundingClientRect(),style=getComputedStyle(el);return {tag:el.tagName,id:el.id,className:typeof el.className==='string'?el.className:'',left:r.left,right:r.right,width:r.width,overflowX:style.overflowX,minWidth:style.minWidth,gridColumns:style.gridTemplateColumns}}).filter(r=>r.width>0&&(r.left< -2||r.right>innerWidth+2)).slice(0,40)}));
+  expect(layout.scrollWidth,JSON.stringify({testedWidth:width,...layout},null,2)).toBeLessThanOrEqual(layout.width+2);
   await options.getByRole('button',{name:'Išvalyti',exact:true}).click();await options.getByRole('checkbox').nth(2).check();
   await expect(options).toBeVisible();await expect(options.locator('input:checked')).toHaveCount(1);
   if(width===390||width===1440)await page.screenshot({path:'screenshots/swimmer-dropdown-'+width+'.png',fullPage:false});
